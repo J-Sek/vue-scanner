@@ -3,7 +3,7 @@ import type { FC } from "hono/jsx";
 import { readdir } from "node:fs/promises";
 import { firstBy } from "thenby";
 import { fullScan } from "./full-scan";
-import type { FolderScanItem, ScanItem, ScanItemEntry } from "./types";
+import type { FolderScanItem, ScanItemEntry } from "./types";
 
 import { Database } from "bun:sqlite";
 
@@ -13,10 +13,45 @@ const src = process.env.PROJECT_PATH!;
 async function readFolder(path: string): Promise<FolderScanItem[]> {
   const db = new Database("data/db.sqlite");
   const dirents = await readdir(`${src}/${path}`, { withFileTypes: true });
+
+  async function getFolderMigration(dirPath: string, pool: string[]): Promise<number> {
+    const dirents = await readdir(`${src}/${dirPath}`, { withFileTypes: true, recursive: true });
+    let sum = 0;
+    for (let x of dirents) {
+      if (x.name.endsWith(".vue")) {
+        const table = path.split('/').at(0)!;
+        const entry = db.query(`SELECT migrationComplexity, allVuetifyComponents FROM ${table} WHERE path = $path LIMIT 1`).get({ $path: `/${dirPath}/${x.name}` }) as ScanItemEntry;
+        if (entry) {
+          sum += entry.migrationComplexity ?? 0;
+          pool.push(...entry.allVuetifyComponents.split(','));
+        }
+      }
+    }
+    return sum;
+  }
+
   const results: FolderScanItem[] = [];
   for (let x of dirents) {
     if (!x.name.endsWith(".vue")) {
-      results.push({ name: x.name, isDirectory: x.isDirectory(), isVue: false });
+      if (x.isDirectory() && /^(components|layouts|pages)/.test(path)) {
+        const vuetifyComponentsPool: string[] = [];
+        const migrationComplexity = await getFolderMigration(`${path}/${x.name}`, vuetifyComponentsPool);
+        results.push({
+          name: x.name,
+          isVue: false,
+          isDirectory: true,
+          migrationComplexity,
+          vuetifyComponents: vuetifyComponentsPool.filter((n,i,a) => a.indexOf(n) === i).sort(),
+        });
+      } else if (x.isDirectory()) {
+        results.push({
+          name: x.name,
+          isVue: false,
+          isDirectory: true,
+        });
+      } else {
+        results.push({ name: x.name, isVue: false, isDirectory: false });
+      }
     } else {
       const table = path.split('/').at(0)!;
       const entry = db.query(`SELECT * FROM ${table} WHERE path = $path LIMIT 1`).get({ $path: `/${path}/${x.name}` }) as ScanItemEntry;
@@ -30,6 +65,14 @@ async function readFolder(path: string): Promise<FolderScanItem[]> {
         localImports: entry.localImports.split(',').filter(x => !!x),
         vuetifyComponents: entry.vuetifyComponents.split(',').filter(x => !!x),
         vuetifyDirectives: entry.vuetifyDirectives.split(',').filter(x => !!x),
+
+        allLocalDependencies: entry.allLocalDependencies.split(',').filter(x => !!x),
+        allOtherDependencies: entry.allOtherDependencies.split(',').filter(x => !!x),
+        allVuetifyComponents: entry.allVuetifyComponents.split(',').filter(x => !!x),
+        allVuetifyDirectives: entry.allVuetifyDirectives.split(',').filter(x => !!x),
+
+        migrationComplexity: entry.migrationComplexity,
+        migrationValue: entry.migrationValue,
       });
     }
   }
@@ -49,10 +92,12 @@ const Layout: FC = (props) => {
         @import url(https://fonts.bunny.net/css?family=syne:400);
         html { font-family: Syne, sans-serif }
         body { background: #151215; color:#ddd }
-        li { padding: .5rem 1rem; background: rgba(255,255,255,.05) }
+        li { padding: 1.5rem 1.6rem; background: rgba(255,255,255,.05) }
         li + li { border-top: thin solid rgba(255,255,255,.2) }
+        pre:first-child { margin: 0 }
         pre { margin: .5rem 0 0; font-family: MonoLisa, monospace }
-        a { color: #27e }
+        code { margin: .5rem 0 0; font-family: MonoLisa, monospace }
+        a { color: #3dd7ea }
         a:not(:hover) { text-decoration: none }
       `}</style>
       <body>{props.children}</body>
@@ -71,18 +116,20 @@ const List: FC<{ path: string; files: FolderScanItem[] }> = (props: {
         {props.files.map((f) =>
           f.isDirectory ? (
             <li>
-              <a style={props.path.split("/").length > 6 ? 'color: red' : ''} href={`${props.path.substring(1)}${f.name}`}>{f.name}</a>
+              <pre><a style={props.path.split("/").length > 6 ? 'color: red' : ''} href={`${props.path.substring(1)}${f.name}`}>{f.name.padEnd(24,' ')}</a><code style='color: yellow; font-weight: bold'>{f.migrationComplexity || ''}</code></pre>
+              {!!f.migrationComplexity && (<pre style='opacity: .4'>Vuetify components:     {(f.vuetifyComponents || []).length || '0'}</pre>)}
             </li>
           ) : (
             <li>
               {!f.isVue && (<span style='color: gold'>{f.name}</span>)}
               {f.isVue && (<span style='color: lime'>{f.name}</span>)}
               {f.isVue && (<>
-                {(f.localDependencies.length || '') && (<pre>Local dependencies:  {f.localDependencies.join(', ')}</pre>)}
-                {(f.otherDependencies.length || '') && (<pre>Other dependencies:  {f.otherDependencies.join(', ')}</pre>)}
-                {(f.localImports.length      || '') && (<pre>Local imports:       {f.localImports.join(', ')}</pre>)}
-                {(f.vuetifyComponents.length || '') && (<pre>Vuetify components:  {f.vuetifyComponents.join(', ')}</pre>)}
-                {(f.vuetifyDirectives.length || '') && (<pre>Vuetify directives:  {f.vuetifyDirectives.join(', ')}</pre>)}
+                <pre style={ f.localDependencies.length ? '' : 'opacity: .4' }>Local dependencies:     {f.localDependencies.join(', ') || '-'}</pre>
+                <pre style={ f.otherDependencies.length ? '' : 'opacity: .4' }>Other dependencies:     {f.otherDependencies.join(', ') || '-'}</pre>
+                <pre style={ f.localImports.length ? '' : 'opacity: .4' }>Local imports:          {f.localImports.join(', ') || '-'}</pre>
+                <pre style={ f.vuetifyComponents.length ? '' : 'opacity: .4' }>Vuetify components:     {f.vuetifyComponents.join(', ') || '-'}</pre>
+                <pre style={ f.vuetifyDirectives.length ? '' : 'opacity: .4' }>Vuetify directives:     {f.vuetifyDirectives.join(', ') || '-'}</pre>
+                <pre>Migration complexity:   <code style='color: yellow; font-weight: bold'>{f.migrationComplexity}</code> <code style='opacity: .4'>&lt;---</code> ( {f.allLocalDependencies!.length} | {f.allOtherDependencies!.length} | {f.allVuetifyComponents!.length} | {f.allVuetifyDirectives!.length} )</pre>
               </>)}
             </li>
           )
@@ -95,6 +142,11 @@ const List: FC<{ path: string; files: FolderScanItem[] }> = (props: {
 app.get("/", async (c) => {
   const files = await readFolder("");
   return c.html(<List path={`~/`} files={files} />);
+});
+
+app.get("/reports/components", async (c) => {
+  // -> sort components by migration value
+  return c.text('Not implemented yet');
 });
 
 app.get("/full-scan", async (c) => {

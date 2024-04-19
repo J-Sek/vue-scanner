@@ -3,6 +3,8 @@ export type FolderScanItem =
       isVue: false;
       name: string;
       isDirectory: boolean;
+      migrationComplexity?: number;
+      vuetifyComponents?: string[];
     }
   | (ScanItem & {
       isVue: true;
@@ -17,6 +19,14 @@ export type ScanItem = {
   localImports: string[];
   vuetifyComponents: string[];
   vuetifyDirectives: string[];
+
+  allLocalDependencies?: string[];
+  allOtherDependencies?: string[];
+  allVuetifyComponents?: string[];
+  allVuetifyDirectives?: string[];
+
+  migrationComplexity?: number;
+  migrationValue?: number;
 };
 
 export type ScanItemEntry = {
@@ -27,4 +37,12 @@ export type ScanItemEntry = {
   localImports: string;
   vuetifyComponents: string;
   vuetifyDirectives: string;
+
+  allLocalDependencies: string;
+  allOtherDependencies: string;
+  allVuetifyComponents: string;
+  allVuetifyDirectives: string;
+
+  migrationComplexity: number;
+  migrationValue: number;
 };
