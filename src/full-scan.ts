@@ -1,4 +1,3 @@
-import { Hono } from "hono";
 import { readdir } from "node:fs/promises";
 import { analyzeFile } from "./file-scanner";
 import { ScanItem } from "./types";
@@ -18,12 +17,6 @@ const multipiers = {
   dependentLayouts: 3,
   dependentPages: 2
 };
-
-const app = new Hono();
-app.get("/full-scan", async (c) => c.json(await fullScan()));
-export default app;
-
-// --------------------------------------------------------------
 
 function setupDatabase(db: Database) {
   // db.query(`DROP TABLE Components`).run();

@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { serveStatic } from "hono/bun";
 import type { FC } from "hono/jsx";
 import { readdir } from "node:fs/promises";
 import { firstBy } from "thenby";
@@ -8,6 +9,8 @@ import type { FolderScanItem, ScanItemEntry } from "./types";
 import { Database } from "bun:sqlite";
 
 const app = new Hono();
+app.use('/favicon.ico', serveStatic({ path: './static/favicon.ico' }))
+
 const src = process.env.PROJECT_PATH!;
 
 async function readFolder(path: string): Promise<FolderScanItem[]> {
@@ -88,18 +91,21 @@ async function readFolder(path: string): Promise<FolderScanItem[]> {
 const Layout: FC = (props) => {
   return (
     <html>
-      <style>{`
-        @import url(https://fonts.bunny.net/css?family=syne:400);
-        html { font-family: Syne, sans-serif }
-        body { background: #151215; color:#ddd }
-        li { padding: .5rem 1rem; background: rgba(255,255,255,.05) }
-        li + li { border-top: thin solid rgba(255,255,255,.2) }
-        pre:first-child { margin: 0 }
-        pre { margin: .5rem 0 0; font-family: MonoLisa, monospace }
-        code { margin: .5rem 0 0; font-family: MonoLisa, monospace }
-        a { color: #3dd7ea }
-        a:not(:hover) { text-decoration: none }
-      `}</style>
+      <head>
+        <link rel="shortcut icon" href="/favicon.ico" />
+        <style>{`
+          @import url(https://fonts.bunny.net/css?family=syne:400);
+          html { font-family: Syne, sans-serif }
+          body { background: #151215; color:#ddd }
+          li { padding: .5rem 1rem; background: rgba(255,255,255,.05) }
+          li + li { border-top: thin solid rgba(255,255,255,.2) }
+          pre:first-child { margin: 0 }
+          pre { margin: .5rem 0 0; font-family: MonoLisa, monospace }
+          code { margin: .5rem 0 0; font-family: MonoLisa, monospace }
+          a { color: #3dd7ea }
+          a:not(:hover) { text-decoration: none }
+        `}</style>
+      </head>
       <body>{props.children}</body>
     </html>
   );
@@ -145,7 +151,6 @@ const Report: FC<{ title: string; items: ReportItem[] }> = (props: { title: stri
         {props.items.map((f) =>
           <li>
             <pre><code style='color: lime'>{f.name.padEnd(64,' ')}</code><code style='opacity: .4; font-size: .75em'>{f.path.split('/').slice(2, -1).join('/').padEnd(40, ' ')}</code><code style='color: #34dbcb; font-weight: bold'>{(f.migrationValue.toString() || '').padStart(6, ' ')}</code><code style='color: orange; font-weight: bold'>{(f.migrationComplexity.toString() || '').padStart(24, ' ')}</code></pre>
-            {/* <pre style='opacity: .4; font-size: .75em'>{f.path.split('/').slice(2, -1).join('/')}</pre> */}
           </li>
         )}
       </ul>
@@ -199,4 +204,7 @@ app.get("/:path1/:path2/:path3/:path4/:path5", async (c) => {
   return c.html(<List path={`~/${path1}/${path2}/${path3}/${path4}/${path5}/`} files={files} />);
 });
 
-export default app;
+export default { 
+  port: 8600,
+  fetch: app.fetch,
+};
