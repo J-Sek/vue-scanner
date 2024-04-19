@@ -3,7 +3,7 @@
 	"tasks": [
 		{
 			"type": "bun",
-			"script": "bun run --hot src/index.tsx",
+			"script": "bun run --hot src/index.ts",
 			"problemMatcher": [],
 			"label": "bun: dev"
 		}
