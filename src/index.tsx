@@ -3,27 +3,39 @@ import type { FC } from "hono/jsx";
 import { readdir } from "node:fs/promises";
 import { firstBy } from "thenby";
 import { fullScan } from "./full-scan";
-import { analyzeFile } from "./file-scanner";
-import type { FolderScanItem } from "./types";
+import type { FolderScanItem, ScanItem, ScanItemEntry } from "./types";
 
-// const db = new Database(":memory:");
+import { Database } from "bun:sqlite";
 
 const app = new Hono();
 const src = process.env.PROJECT_PATH!;
 
 async function readFolder(path: string): Promise<FolderScanItem[]> {
+  const db = new Database("data/db.sqlite");
   const dirents = await readdir(`${src}/${path}`, { withFileTypes: true });
   const results: FolderScanItem[] = [];
   for (let x of dirents) {
     if (!x.name.endsWith(".vue")) {
       results.push({ name: x.name, isDirectory: x.isDirectory(), isVue: false });
     } else {
+      const table = path.split('/').at(0)!;
+      const entry = db.query(`SELECT * FROM ${table} WHERE path = $path LIMIT 1`).get({ $path: `/${path}/${x.name}` }) as ScanItemEntry;
       results.push({
-        isDirectory: false, isVue: true,
-        ...await analyzeFile(src, `${path}/${x.name}`, x.name)
+        isDirectory: false,
+        isVue: true,
+        path: entry.path,
+        name: entry.name,
+        localDependencies: entry.localDependencies.split(',').filter(x => !!x),
+        otherDependencies: entry.otherDependencies.split(',').filter(x => !!x),
+        localImports: entry.localImports.split(',').filter(x => !!x),
+        vuetifyComponents: entry.vuetifyComponents.split(',').filter(x => !!x),
+        vuetifyDirectives: entry.vuetifyDirectives.split(',').filter(x => !!x),
       });
     }
   }
+
+  db.close();
+
   return results.sort(
     firstBy((x: FolderScanItem) => x.isDirectory, "desc")
     .thenBy((x: FolderScanItem) => x.name.startsWith("."), "desc")
@@ -81,46 +93,41 @@ const List: FC<{ path: string; files: FolderScanItem[] }> = (props: {
 };
 
 app.get("/", async (c) => {
-  const files = await readFolder(src as string);
+  const files = await readFolder("");
   return c.html(<List path={`~/`} files={files} />);
 });
 
-// app.get("/full-scan", async (c) => {
-//   return c.json(await fullScan(src as string));
-// });
+app.get("/full-scan", async (c) => {
+  return c.json(await fullScan());
+});
 
 app.get("/:path1", async (c) => {
   const { path1 } = c.req.param();
-  const fullPath = [path1].join("/");
-  const files = await readFolder(fullPath);
+  const files = await readFolder([path1].join("/"));
   return c.html(<List path={`~/${path1}/`} files={files} />);
 });
 
 app.get("/:path1/:path2", async (c) => {
   const { path1, path2 } = c.req.param();
-  const fullPath = [path1, path2].join("/");
-  const files = await readFolder(fullPath);
+  const files = await readFolder([path1, path2].join("/"));
   return c.html(<List path={`~/${path1}/${path2}/`} files={files} />);
 });
 
 app.get("/:path1/:path2/:path3", async (c) => {
   const { path1, path2, path3 } = c.req.param();
-  const fullPath = [path1, path2, path3].join("/");
-  const files = await readFolder(fullPath);
+  const files = await readFolder([path1, path2, path3].join("/"));
   return c.html(<List path={`~/${path1}/${path2}/${path3}/`} files={files} />);
 });
 
 app.get("/:path1/:path2/:path3/:path4", async (c) => {
   const { path1, path2, path3, path4 } = c.req.param();
-  const fullPath = [path1, path2, path3, path4].join("/");
-  const files = await readFolder(fullPath);
+  const files = await readFolder([path1, path2, path3, path4].join("/"));
   return c.html(<List path={`~/${path1}/${path2}/${path3}/${path4}/`} files={files} />);
 });
 
 app.get("/:path1/:path2/:path3/:path4/:path5", async (c) => {
   const { path1, path2, path3, path4, path5 } = c.req.param();
-  const fullPath = [path1, path2, path3, path4, path5].join("/");
-  const files = await readFolder(fullPath);
+  const files = await readFolder([path1, path2, path3, path4, path5].join("/"));
   return c.html(<List path={`~/${path1}/${path2}/${path3}/${path4}/${path5}/`} files={files} />);
 });
 

@@ -18,3 +18,13 @@ export type ScanItem = {
   vuetifyComponents: string[];
   vuetifyDirectives: string[];
 };
+
+export type ScanItemEntry = {
+  path: string;
+  name: string;
+  localDependencies: string;
+  otherDependencies: string;
+  localImports: string;
+  vuetifyComponents: string;
+  vuetifyDirectives: string;
+};
