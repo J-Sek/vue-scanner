@@ -12,7 +12,11 @@ const multipiers = {
   localComponents: 5,
   otherComponents: 4,
   frameworkComponents: 3,
-  frameworkDirectives: 2
+  frameworkDirectives: 2,
+
+  dependentComponents: 1,
+  dependentLayouts: 3,
+  dependentPages: 2
 };
 
 const app = new Hono();
@@ -92,9 +96,9 @@ export async function fullScan() {
   const db = new Database("data/db.sqlite", { create: true });
   setupDatabase(db);
 
-  analyzeComponents(db, components, pages);
-  analyzeLayouts(db, layouts, components);
   analyzePages(db, pages, components);
+  analyzeLayouts(db, layouts, components);
+  analyzeComponents(db, components, pages, layouts);
 
   db.close();
 
@@ -116,7 +120,7 @@ async function findVueFiles(dir: string): Promise<ScanItem[]> {
   return results.sort(firstBy(x => x.path));
 }
 
-function analyzeComponents(db: Database, components: ScanItem[], pages: ScanItem[]) {
+function analyzeComponents(db: Database, components: ScanItem[], pages: ScanItem[], layouts: ScanItem[]) {
 
   components.forEach(x => {
 
@@ -131,9 +135,23 @@ function analyzeComponents(db: Database, components: ScanItem[], pages: ScanItem
       + x.allOtherDependencies.length * multipiers.otherComponents
       + x.allVuetifyComponents.length * multipiers.frameworkComponents
       + x.allVuetifyDirectives.length * multipiers.frameworkDirectives;
-    x.migrationValue = 0;
-      // + x.allDependentComponents.length * 3
-      // + x.allDependentPages.length * 5;
+
+    const allDependentPages = pages
+      .filter(p => p.allLocalDependencies!.includes(x.name))
+      .map(x => x.path);
+
+    const allDependentLayouts = layouts
+      .filter(p => p.allLocalDependencies!.includes(x.name))
+      .map(x => x.path);
+
+    const dependentComponents = components
+      .filter(p => p.localDependencies!.includes(x.name) || p.localImports!.includes(x.name))
+      .map(x => x.path);
+
+    x.migrationValue = 0
+      + dependentComponents.length * multipiers.dependentComponents
+      + allDependentLayouts.length * multipiers.dependentLayouts;
+      + allDependentPages.length * multipiers.dependentPages;
   });
 
   const insertOne = db.prepare("INSERT INTO Components (path, name, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity, migrationValue) VALUES ($path, $name, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity, $migrationValue)");

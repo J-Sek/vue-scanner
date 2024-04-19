@@ -92,7 +92,7 @@ const Layout: FC = (props) => {
         @import url(https://fonts.bunny.net/css?family=syne:400);
         html { font-family: Syne, sans-serif }
         body { background: #151215; color:#ddd }
-        li { padding: 1.5rem 1.6rem; background: rgba(255,255,255,.05) }
+        li { padding: .5rem 1rem; background: rgba(255,255,255,.05) }
         li + li { border-top: thin solid rgba(255,255,255,.2) }
         pre:first-child { margin: 0 }
         pre { margin: .5rem 0 0; font-family: MonoLisa, monospace }
@@ -105,10 +105,7 @@ const Layout: FC = (props) => {
   );
 };
 
-const List: FC<{ path: string; files: FolderScanItem[] }> = (props: {
-  path: string;
-  files: FolderScanItem[];
-}) => {
+const List: FC<{ path: string; files: FolderScanItem[] }> = (props: { path: string; files: FolderScanItem[] }) => {
   return (
     <Layout>
       <h2>{props.path}</h2>
@@ -139,14 +136,33 @@ const List: FC<{ path: string; files: FolderScanItem[] }> = (props: {
   );
 };
 
+type ReportItem = { name: string, path: string, migrationComplexity: number, migrationValue: number };
+const Report: FC<{ title: string; items: ReportItem[] }> = (props: { title: string; items: ReportItem[] }) => {
+  return (
+    <Layout>
+      <h2>{props.title}</h2>
+      <ul style='margin-top: 1rem; font-family: "MonoLisa"'>
+        {props.items.map((f) =>
+          <li>
+            <pre><code style='color: lime'>{f.name.padEnd(64,' ')}</code><code style='opacity: .4; font-size: .75em'>{f.path.split('/').slice(2, -1).join('/').padEnd(40, ' ')}</code><code style='color: #34dbcb; font-weight: bold'>{(f.migrationValue.toString() || '').padStart(6, ' ')}</code><code style='color: orange; font-weight: bold'>{(f.migrationComplexity.toString() || '').padStart(24, ' ')}</code></pre>
+            {/* <pre style='opacity: .4; font-size: .75em'>{f.path.split('/').slice(2, -1).join('/')}</pre> */}
+          </li>
+        )}
+      </ul>
+    </Layout>
+  );
+};
+
 app.get("/", async (c) => {
   const files = await readFolder("");
   return c.html(<List path={`~/`} files={files} />);
 });
 
 app.get("/reports/components", async (c) => {
-  // -> sort components by migration value
-  return c.text('Not implemented yet');
+  const db = new Database("data/db.sqlite");
+  const items = db.query(`SELECT name, path, migrationComplexity, migrationValue FROM Components ORDER BY 4 DESC, 3 ASC`).all() as ReportItem[];
+  db.close();
+  return c.html(<Report title='Components migration value' items={items} />);
 });
 
 app.get("/full-scan", async (c) => {
