@@ -8,11 +8,13 @@ type ReportItem = { name: string, path: string, migrationComplexity: number, mig
 const Report: FC<{ title: string; items: ReportItem[] }> = (props: { title: string; items: ReportItem[] }) => {
   return (
     <Layout>
-      <h2>{props.title}</h2>
-      <ul style='margin-top: 1rem; font-family: "MonoLisa"'>
+      <ul style='margin-top: 1rem;'>
+        <li style='background: transparent; opacity: .4'>
+            <pre><code>{'Component'.padEnd(64,' ')}</code><code>{'Directory'.padEnd(20, ' ')}</code><code>{'Migration Value'.padStart(21, ' ')}</code><code>{'Complexity'.padStart(24, ' ')}</code></pre>
+        </li>
         {props.items.map((f) =>
           <li>
-            <pre><code style='color: lime'>{f.name.padEnd(64,' ')}</code><code style='opacity: .4; font-size: .75em'>{f.path.split('/').slice(2, -1).join('/').padEnd(40, ' ')}</code><code style='color: #34dbcb; font-weight: bold'>{(f.migrationValue.toString() || '').padStart(6, ' ')}</code><code style='color: orange; font-weight: bold'>{(f.migrationComplexity.toString() || '').padStart(24, ' ')}</code></pre>
+            <pre><code style='color: lime'>{f.name.padEnd(64,' ')}</code><code style='opacity: .4; font-size: 14px'>{f.path.split('/').slice(2, -1).join('/').padEnd(40, ' ')}</code><code style='color: #34dbcb; font-weight: bold'>{(f.migrationValue.toString() || '').padStart(6, ' ')}</code><code style='color: orange; font-weight: bold'>{(f.migrationComplexity.toString() || '').padStart(24, ' ')}</code></pre>
           </li>
         )}
       </ul>

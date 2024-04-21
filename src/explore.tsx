@@ -10,7 +10,7 @@ const List: FC<{ path: string; files: FolderScanItem[] }> = (props: { path: stri
   return (
     <Layout>
       <h2>{props.path}</h2>
-      <ul style='margin-top: 1rem; font-family: "MonoLisa"'>
+      <ul style='margin-top: 1rem;'>
         {props.files.map((f) =>
           f.isDirectory ? (
             <li>
@@ -24,7 +24,7 @@ const List: FC<{ path: string; files: FolderScanItem[] }> = (props: { path: stri
               {f.isVue && (<>
                 <pre style={ f.localDependencies.length ? '' : 'opacity: .4' }>Local dependencies:     {f.localDependencies.join(', ') || '-'}</pre>
                 <pre style={ f.otherDependencies.length ? '' : 'opacity: .4' }>Other dependencies:     {f.otherDependencies.join(', ') || '-'}</pre>
-                <pre style={ f.localImports.length ? '' : 'opacity: .4' }>Local imports:          {f.localImports.join(', ') || '-'}</pre>
+                <pre style={ f.localImports.length      ? '' : 'opacity: .4' }>Local imports:          {f.localImports.join(', ')      || '-'}</pre>
                 <pre style={ f.vuetifyComponents.length ? '' : 'opacity: .4' }>Vuetify components:     {f.vuetifyComponents.join(', ') || '-'}</pre>
                 <pre style={ f.vuetifyDirectives.length ? '' : 'opacity: .4' }>Vuetify directives:     {f.vuetifyDirectives.join(', ') || '-'}</pre>
                 <pre>Migration complexity:   <code style='color: yellow; font-weight: bold'>{f.migrationComplexity}</code> <code style='opacity: .4'>&lt;---</code> ( {f.allLocalDependencies!.length} | {f.allOtherDependencies!.length} | {f.allVuetifyComponents!.length} | {f.allVuetifyDirectives!.length} )</pre>
