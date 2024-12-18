@@ -1,8 +1,8 @@
 import type { ScanItem } from "./types";
 
 const matchVuetifyDirectives = /v-(resize|click-outside|mutate|intersect|resize|ripple|scroll)/ig;
-const otherDependencies = 'draggable,quill-editor,vue-cropper,v-chart'.split(',');
-const ignoreHtmlElements = 'div,span,hr,a,b,p,ul,ol,li,table,thead,tbody,tfoot,tr,th,td,small,strong,strike,em,sup,select,code,pre,nav,h1,h2,h3,h4,h5,h6,time,img,canvas,section,iframe,form,fieldset,label,button,input,main,aside,header,footer,dialog,html,body,style'.split(',');
+const otherDependencies = 'draggable,quill-editor,vue-cropper,v-chart,tip-tap'.split(',');
+const ignoreHtmlElements = 'div,span,hr,a,b,s,i,p,ul,ol,li,table,thead,tbody,tfoot,tr,th,td,small,strong,strike,em,sup,select,code,pre,nav,h1,h2,h3,h4,h5,h6,time,img,canvas,section,iframe,form,fieldset,label,button,input,main,aside,header,footer,dialog,html,body,style'.split(',');
 const ignoreMetaElements = 'component,scrollbar,template,slot,keep-alive,n-link,nuxt,nuxt-child'.split(',');
 const ignoreBooleanProps = 'dense,disabled,required,scrollable,danger,nuxt,prominent,nav,narrow,readonly,top,left,right,bottom,outlined,multiple,mandatory,hide-actions'.split(',');
 const ignoreSvgElements = 'svg,g,line,rect,circle,ellipse,feOffset,feGaussianBlur,feBlend,path,filter,pattern,marker,defs,polygon,polyline,image,text'.split(',');
@@ -12,10 +12,10 @@ const ignoreDirectives = 'v-else'.split(',');
 
 export async function analyzeFile(baseDir: string, path: string, name: string): Promise<ScanItem> {
   const text = await Bun.file(`${baseDir}/${path}`).text();
-  const [template, rest] = text.split('</template>');
+  const [template, rest] = text.split('<script>');
   const script = (rest ?? template).split('</script>')[0];
-  const vDeps = [...(template.match(/(\n|\n\s+|#\[)[a-z\-]+(\.|\(|\n| |:)/g) ?? [])]
-    .map(m => m.replace(/[^a-z\-]/ig, '').replace('lazy-', ''))
+  const vDeps = [...(template.match(/<[a-z][a-z\-0-9]+(\.|\r|\n| |:|>)/ig) ?? [])]
+    .map(m => m.replace(/[^a-z\-0-9]/ig, '').replace('lazy-', ''))
     .filter(n => !ignoreHtmlElements.includes(n))
     .filter(n => !ignoreMetaElements.includes(n))
     .filter(n => !ignoreBooleanProps.includes(n))
