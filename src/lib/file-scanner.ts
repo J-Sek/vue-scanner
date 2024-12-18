@@ -1,7 +1,8 @@
 import type { ScanItem } from "./types";
 
 const matchVuetifyDirectives = /v-(resize|click-outside|mutate|intersect|resize|ripple|scroll)/ig;
-const otherDependencies = 'draggable,quill-editor,vue-cropper,v-chart,tip-tap'.split(',');
+const chartkick = 'line-chart,pie-chart,column-chart,bar-chart,area-chart,scatter-chart,geo-chart,timeline,';
+const otherDependencies = chartkick + 'draggable,quill-editor,vue-cropper,v-chart,tip-tap'.split(',');
 const ignoreHtmlElements = 'div,span,hr,a,b,s,i,p,ul,ol,li,table,thead,tbody,tfoot,tr,th,td,small,strong,strike,em,sup,select,code,pre,nav,h1,h2,h3,h4,h5,h6,time,img,canvas,section,iframe,form,fieldset,label,button,input,main,aside,header,footer,dialog,html,body,style'.split(',');
 const ignoreMetaElements = 'component,scrollbar,template,slot,keep-alive,n-link,nuxt,nuxt-child'.split(',');
 const ignoreBooleanProps = 'dense,disabled,required,scrollable,danger,nuxt,prominent,nav,narrow,readonly,top,left,right,bottom,outlined,multiple,mandatory,hide-actions'.split(',');
