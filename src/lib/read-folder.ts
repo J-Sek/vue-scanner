@@ -14,9 +14,10 @@ export async function readFolder(path: string): Promise<FolderScanItem[]> {
     const dirents = await readdir(`${src}/${dirPath}`, { withFileTypes: true, recursive: true });
     let sum = 0;
     for (let x of dirents) {
+      const relativePath = x.path.replace(`${src}/`, '') + `/${x.name}`
       if (x.name.endsWith(".vue")) {
         const table = path.split('/').at(0)!;
-        const entry = db.query(`SELECT migrationComplexity, allVuetifyComponents FROM ${table} WHERE path = $path LIMIT 1`).get({ $path: `/${dirPath}/${x.name}` }) as ScanItemEntry;
+        const entry = db.query(`SELECT migrationComplexity, allVuetifyComponents FROM ${table} WHERE path = $path LIMIT 1`).get({ $path: relativePath }) as ScanItemEntry;
         if (entry) {
           sum += entry.migrationComplexity ?? 0;
           pool.push(...entry.allVuetifyComponents.split(','));
@@ -28,12 +29,13 @@ export async function readFolder(path: string): Promise<FolderScanItem[]> {
 
   const results: FolderScanItem[] = [];
   for (let x of dirents) {
+    const relativePath = (x.path.replace(`${src}/`, '') + `/${x.name}`).replace(/^\//, '')
     if (!x.name.endsWith(".vue")) {
       if (x.isDirectory() && /^(components|layouts|pages)/.test(path)) {
         const vuetifyComponentsPool: string[] = [];
-        const migrationComplexity = await getFolderMigration(`${path}/${x.name}`, vuetifyComponentsPool);
+        const migrationComplexity = await getFolderMigration(relativePath, vuetifyComponentsPool);
         results.push({
-          name: x.name,
+          name: relativePath,
           isVue: false,
           isDirectory: true,
           migrationComplexity,
@@ -41,16 +43,22 @@ export async function readFolder(path: string): Promise<FolderScanItem[]> {
         });
       } else if (x.isDirectory()) {
         results.push({
-          name: x.name,
+          name: relativePath,
           isVue: false,
           isDirectory: true,
         });
       } else {
-        results.push({ name: x.name, isVue: false, isDirectory: false });
+        results.push({ name: relativePath, isVue: false, isDirectory: false });
       }
     } else {
       const table = path.split('/').at(0)!;
-      const entry = db.query(`SELECT * FROM ${table} WHERE path = $path LIMIT 1`).get({ $path: `/${path}/${x.name}` }) as ScanItemEntry;
+      if (!['components', 'layouts', 'pages'].includes(table)) {
+        break; // bail for vue files outside of scan scope, e.g. app.vue
+      }
+      const entry = db.query(`SELECT * FROM ${table} WHERE path = $path LIMIT 1`).get({ $path: relativePath }) as ScanItemEntry;
+      if (!entry) {
+        throw new Error('Missing entry for path: ' + relativePath)
+      }
       results.push({
         isDirectory: false,
         isVue: true,

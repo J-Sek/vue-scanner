@@ -7,7 +7,7 @@ import { Database } from "bun:sqlite";
 
 const src = process.env.PROJECT_PATH;
 
-const multipiers = {
+const multipliers = {
   localComponents: 5,
   otherComponents: 4,
   frameworkComponents: 3,
@@ -19,7 +19,7 @@ const multipiers = {
 };
 
 function setupDatabase(db: Database) {
-  // db.query(`DROP TABLE Components`).run();
+  db.query(`DROP TABLE Components`).run();
   db.query(`CREATE TABLE IF NOT EXISTS Components (
     path TEXT PRIMARY KEY,
     name TEXT NOT NULL UNIQUE,
@@ -39,7 +39,7 @@ function setupDatabase(db: Database) {
     migrationValue INTEGER
   )`).run();
 
-  // db.query(`DROP TABLE Layouts`).run();
+  db.query(`DROP TABLE Layouts`).run();
   db.query(`CREATE TABLE IF NOT EXISTS Layouts (
     path TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -58,7 +58,7 @@ function setupDatabase(db: Database) {
     migrationComplexity INTEGER
   )`).run();
 
-  // db.query(`DROP TABLE Pages`).run();
+  db.query(`DROP TABLE Pages`).run();
   db.query(`CREATE TABLE IF NOT EXISTS Pages (
     path TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -107,7 +107,8 @@ async function findVueFiles(dir: string): Promise<ScanItem[]> {
   const results: ScanItem[] = [];
   for (let x of dirents) {
     if (x.name.endsWith(".vue")) {
-      results.push(await analyzeFile(src!, `/${dir}/${x.name}`, x.name));
+      const relativePath = x.path.replace(`${src}/`, '') + `/${x.name}`
+      results.push(await analyzeFile(src!, relativePath, x.name));
     }
   }
   return results.sort(firstBy(x => x.path));
@@ -124,10 +125,10 @@ function analyzeComponents(db: Database, components: ScanItem[], pages: ScanItem
     // x.allMissingDependencies = [];
 
     x.migrationComplexity = 0 /* script size / KLOC */
-      + x.allLocalDependencies.length * multipiers.localComponents
-      + x.allOtherDependencies.length * multipiers.otherComponents
-      + x.allVuetifyComponents.length * multipiers.frameworkComponents
-      + x.allVuetifyDirectives.length * multipiers.frameworkDirectives;
+      + x.allLocalDependencies.length * multipliers.localComponents
+      + x.allOtherDependencies.length * multipliers.otherComponents
+      + x.allVuetifyComponents.length * multipliers.frameworkComponents
+      + x.allVuetifyDirectives.length * multipliers.frameworkDirectives;
 
     const allDependentPages = pages
       .filter(p => p.allLocalDependencies!.includes(x.name))
@@ -142,9 +143,9 @@ function analyzeComponents(db: Database, components: ScanItem[], pages: ScanItem
       .map(x => x.path);
 
     x.migrationValue = 0
-      + dependentComponents.length * multipiers.dependentComponents
-      + allDependentLayouts.length * multipiers.dependentLayouts;
-      + allDependentPages.length * multipiers.dependentPages;
+      + dependentComponents.length * multipliers.dependentComponents
+      + allDependentLayouts.length * multipliers.dependentLayouts;
+      + allDependentPages.length * multipliers.dependentPages;
   });
 
   const insertOne = db.prepare("INSERT INTO Components (path, name, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity, migrationValue) VALUES ($path, $name, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity, $migrationValue)");
@@ -178,10 +179,10 @@ function analyzeLayouts(db: Database, layouts: ScanItem[], components: ScanItem[
     // x.allMissingDependencies = [];
 
     x.migrationComplexity = 0 /* script size / KLOC */
-      + x.allLocalDependencies.length * multipiers.localComponents
-      + x.allOtherDependencies.length * multipiers.otherComponents
-      + x.allVuetifyComponents.length * multipiers.frameworkComponents
-      + x.allVuetifyDirectives.length * multipiers.frameworkDirectives;
+      + x.allLocalDependencies.length * multipliers.localComponents
+      + x.allOtherDependencies.length * multipliers.otherComponents
+      + x.allVuetifyComponents.length * multipliers.frameworkComponents
+      + x.allVuetifyDirectives.length * multipliers.frameworkDirectives;
   });
 
   const insertOne = db.prepare("INSERT INTO Layouts (path, name, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity) VALUES ($path, $name, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity)");
@@ -214,10 +215,10 @@ function analyzePages(db: Database, pages: ScanItem[], components: ScanItem[]) {
     // x.allMissingDependencies = [];
 
     x.migrationComplexity = 0 /* script size / KLOC */
-      + x.allLocalDependencies.length * multipiers.localComponents
-      + x.allOtherDependencies.length * multipiers.otherComponents
-      + x.allVuetifyComponents.length * multipiers.frameworkComponents
-      + x.allVuetifyDirectives.length * multipiers.frameworkDirectives;
+      + x.allLocalDependencies.length * multipliers.localComponents
+      + x.allOtherDependencies.length * multipliers.otherComponents
+      + x.allVuetifyComponents.length * multipliers.frameworkComponents
+      + x.allVuetifyDirectives.length * multipliers.frameworkDirectives;
   });
 
   const insertOne = db.prepare("INSERT INTO Pages (path, name, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity) VALUES ($path, $name, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity)");

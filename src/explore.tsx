@@ -14,8 +14,8 @@ const List: FC<{ path: string; files: FolderScanItem[] }> = (props: { path: stri
         {props.files.map((f) =>
           f.isDirectory ? (
             <li>
-              <pre><a style={props.path.split("/").length > 6 ? 'color: red' : ''} href={`/explore${props.path.substring(1)}${f.name}`}>{f.name.padEnd(24,' ')}</a><code style='color: yellow; font-weight: bold'>{f.migrationComplexity || ''}</code></pre>
-              {!!f.migrationComplexity && (<pre style='opacity: .4'>Vuetify components:     {(f.vuetifyComponents || []).length || '0'}</pre>)}
+              <pre><a style={props.path.split("/").length > 6 ? 'color: red' : ''} href={`/explore/${f.name}`}>{f.name.padEnd(44,' ')}</a><code style='color: yellow; font-weight: bold'>{String(f.migrationComplexity || '').padStart(6,' ')}</code></pre>
+              {!!f.migrationComplexity && (<pre style='opacity: .4'>{'Vuetify components:'.padEnd(44,' ')}{String((f.vuetifyComponents || []).length || '0').padStart(6,' ')}</pre>)}
             </li>
           ) : (
             <li>
