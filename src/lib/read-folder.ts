@@ -35,7 +35,7 @@ export async function readFolder(path: string): Promise<FolderScanItem[]> {
         const vuetifyComponentsPool: string[] = [];
         const migrationComplexity = await getFolderMigration(relativePath, vuetifyComponentsPool);
         results.push({
-          name: relativePath,
+          fileName: relativePath,
           isVue: false,
           isDirectory: true,
           migrationComplexity,
@@ -43,12 +43,12 @@ export async function readFolder(path: string): Promise<FolderScanItem[]> {
         });
       } else if (x.isDirectory()) {
         results.push({
-          name: relativePath,
+          fileName: relativePath,
           isVue: false,
           isDirectory: true,
         });
       } else {
-        results.push({ name: relativePath, isVue: false, isDirectory: false });
+        results.push({ fileName: relativePath, isVue: false, isDirectory: false });
       }
     } else {
       const table = path.split('/').at(0)!;
@@ -63,7 +63,8 @@ export async function readFolder(path: string): Promise<FolderScanItem[]> {
         isDirectory: false,
         isVue: true,
         path: entry.path,
-        name: entry.name,
+        fileName: entry.fileName,
+        kebabName: entry.kebabName,
         localDependencies: entry.localDependencies.split(',').filter(x => !!x),
         otherDependencies: entry.otherDependencies.split(',').filter(x => !!x),
         localImports: entry.localImports.split(',').filter(x => !!x),
@@ -85,6 +86,6 @@ export async function readFolder(path: string): Promise<FolderScanItem[]> {
 
   return results.sort(
     firstBy((x: FolderScanItem) => x.isDirectory, "desc")
-    .thenBy((x: FolderScanItem) => x.name.startsWith("."), "desc")
-    .thenBy((x) => x.name));
+    .thenBy((x: FolderScanItem) => x.fileName.startsWith("."), "desc")
+    .thenBy((x) => x.fileName));
 }

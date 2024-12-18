@@ -1,7 +1,7 @@
 export type FolderScanItem =
   | {
       isVue: false;
-      name: string;
+      fileName: string;
       isDirectory: boolean;
       migrationComplexity?: number;
       vuetifyComponents?: string[];
@@ -13,7 +13,8 @@ export type FolderScanItem =
 
 export type ScanItem = {
   path: string;
-  name: string;
+  fileName: string;
+  kebabName: string;
   localDependencies: string[];
   otherDependencies: string[];
   localImports: string[];
@@ -31,7 +32,8 @@ export type ScanItem = {
 
 export type ScanItemEntry = {
   path: string;
-  name: string;
+  fileName: string;
+  kebabName: string;
   localDependencies: string;
   otherDependencies: string;
   localImports: string;

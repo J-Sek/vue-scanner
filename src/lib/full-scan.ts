@@ -22,7 +22,8 @@ function setupDatabase(db: Database) {
   db.query(`DROP TABLE Components`).run();
   db.query(`CREATE TABLE IF NOT EXISTS Components (
     path TEXT PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE,
+    fileName TEXT NOT NULL UNIQUE,
+    kebabName TEXT NOT NULL,
 
     localDependencies TEXT,
     otherDependencies TEXT,
@@ -42,7 +43,8 @@ function setupDatabase(db: Database) {
   db.query(`DROP TABLE Layouts`).run();
   db.query(`CREATE TABLE IF NOT EXISTS Layouts (
     path TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
+    fileName TEXT NOT NULL,
+    kebabName TEXT NOT NULL,
 
     localDependencies TEXT,
     otherDependencies TEXT,
@@ -61,7 +63,8 @@ function setupDatabase(db: Database) {
   db.query(`DROP TABLE Pages`).run();
   db.query(`CREATE TABLE IF NOT EXISTS Pages (
     path TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
+    fileName TEXT NOT NULL,
+    kebabName TEXT NOT NULL,
 
     localDependencies TEXT,
     otherDependencies TEXT,
@@ -124,37 +127,38 @@ function analyzeComponents(db: Database, components: ScanItem[], pages: ScanItem
     x.allVuetifyDirectives = getAllRecursive(components, [], x, (x) => x.vuetifyDirectives);
     // x.allMissingDependencies = [];
 
-    x.migrationComplexity = 0 /* script size / KLOC */
+    x.migrationComplexity = 0 /* TODO: add script size / KLOC */
       + x.allLocalDependencies.length * multipliers.localComponents
       + x.allOtherDependencies.length * multipliers.otherComponents
       + x.allVuetifyComponents.length * multipliers.frameworkComponents
       + x.allVuetifyDirectives.length * multipliers.frameworkDirectives;
 
     const allDependentPages = pages
-      .filter(p => p.allLocalDependencies!.includes(x.name))
+      .filter(p => p.allLocalDependencies!.includes(x.kebabName))
       .map(x => x.path);
 
     const allDependentLayouts = layouts
-      .filter(p => p.allLocalDependencies!.includes(x.name))
+      .filter(p => p.allLocalDependencies!.includes(x.kebabName))
       .map(x => x.path);
 
     const dependentComponents = components
-      .filter(p => p.localDependencies!.includes(x.name) || p.localImports!.includes(x.name))
+      .filter(p => p.localDependencies!.includes(x.kebabName) || p.localImports!.includes(x.fileName))
       .map(x => x.path);
 
     x.migrationValue = 0
       + dependentComponents.length * multipliers.dependentComponents
-      + allDependentLayouts.length * multipliers.dependentLayouts;
+      + allDependentLayouts.length * multipliers.dependentLayouts
       + allDependentPages.length * multipliers.dependentPages;
   });
 
-  const insertOne = db.prepare("INSERT INTO Components (path, name, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity, migrationValue) VALUES ($path, $name, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity, $migrationValue)");
+  const insertOne = db.prepare(`INSERT INTO Components (path, fileName, kebabName, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity, migrationValue) VALUES ($path, $fileName, $kebabName, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity, $migrationValue)`);
   const insertMany = db.transaction(items => { items.forEach((x: any) => insertOne.run(x)); return items.length; });
 
   db.query(`DELETE FROM Components`).run();
   return insertMany(components.map(x => ({
-    $name: x.name,
     $path: x.path,
+    $fileName: x.fileName,
+    $kebabName: x.kebabName,
     $localDependencies: x.localDependencies.join(','),
     $otherDependencies: x.otherDependencies.join(','),
     $localImports: x.localImports.join(','),
@@ -185,13 +189,14 @@ function analyzeLayouts(db: Database, layouts: ScanItem[], components: ScanItem[
       + x.allVuetifyDirectives.length * multipliers.frameworkDirectives;
   });
 
-  const insertOne = db.prepare("INSERT INTO Layouts (path, name, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity) VALUES ($path, $name, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity)");
+  const insertOne = db.prepare(`INSERT INTO Layouts (path, fileName, kebabName, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity) VALUES ($path, $fileName, $kebabName, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity)`);
   const insertMany = db.transaction(items => { items.forEach((x: any) => insertOne.run(x)); return items.length; });
 
   db.query(`DELETE FROM layouts`).run();
   return insertMany(layouts.map(x => ({
     $path: x.path,
-    $name: x.name,
+    $fileName: x.fileName,
+    $kebabName: x.kebabName,
     $localDependencies: x.localDependencies.join(','),
     $otherDependencies: x.otherDependencies.join(','),
     $localImports: x.localImports.join(','),
@@ -221,13 +226,14 @@ function analyzePages(db: Database, pages: ScanItem[], components: ScanItem[]) {
       + x.allVuetifyDirectives.length * multipliers.frameworkDirectives;
   });
 
-  const insertOne = db.prepare("INSERT INTO Pages (path, name, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity) VALUES ($path, $name, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity)");
+  const insertOne = db.prepare(`INSERT INTO Pages (path, fileName, kebabName, localDependencies, otherDependencies, localImports, vuetifyComponents, vuetifyDirectives, allLocalDependencies, allOtherDependencies, allVuetifyComponents, allVuetifyDirectives, migrationComplexity) VALUES ($path, $fileName, $kebabName, $localDependencies, $otherDependencies, $localImports, $vuetifyComponents, $vuetifyDirectives, $allLocalDependencies, $allOtherDependencies, $allVuetifyComponents, $allVuetifyDirectives, $migrationComplexity)`);
   const insertMany = db.transaction(items => { items.forEach((x: any) => insertOne.run(x)); return items.length; });
 
   db.query(`DELETE FROM pages`).run();
   return insertMany(pages.map(x => ({
     $path: x.path,
-    $name: x.name,
+    $fileName: x.fileName,
+    $kebabName: x.kebabName,
     $localDependencies: x.localDependencies.join(','),
     $otherDependencies: x.otherDependencies.join(','),
     $localImports: x.localImports.join(','),
@@ -249,7 +255,7 @@ function getAllRecursive(components: ScanItem[], pool: string[], item: ScanItem,
   }
   const getDependencies = (x: ScanItem) => [...x.localDependencies, ...x.localImports].filter((n,i,a) => a.indexOf(n) === i);
   for (const dependencyName of getDependencies(item)) {
-    const dependencyItem = components.find(x => x.name === dependencyName);
+    const dependencyItem = components.find(x => x.kebabName === dependencyName);
     if (dependencyItem && !visitedComponents.includes(dependencyName)) {
       visitedComponents.push(dependencyName);
       getAllRecursive(components, pool, dependencyItem, selector, visitedComponents);

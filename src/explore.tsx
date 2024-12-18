@@ -14,13 +14,13 @@ const List: FC<{ path: string; files: FolderScanItem[] }> = (props: { path: stri
         {props.files.map((f) =>
           f.isDirectory ? (
             <li>
-              <pre><a style={props.path.split("/").length > 6 ? 'color: red' : ''} href={`/explore/${f.name}`}>{f.name.padEnd(44,' ')}</a><code style='color: yellow; font-weight: bold'>{String(f.migrationComplexity || '').padStart(6,' ')}</code></pre>
+              <pre><a style={props.path.split("/").length > 6 ? 'color: red' : ''} href={`/explore/${f.fileName}`}>{f.fileName.padEnd(44,' ')}</a><code style='color: yellow; font-weight: bold'>{String(f.migrationComplexity || '').padStart(6,' ')}</code></pre>
               {!!f.migrationComplexity && (<pre style='opacity: .4'>{'Vuetify components:'.padEnd(44,' ')}{String((f.vuetifyComponents || []).length || '0').padStart(6,' ')}</pre>)}
             </li>
           ) : (
             <li>
-              {!f.isVue && (<span style='color: gold'>{f.name}</span>)}
-              {f.isVue && (<span style='color: lime'>{f.name}</span>)}
+              {!f.isVue && (<span style='color: gold'>{f.fileName}</span>)}
+              {f.isVue && (<span style='color: lime'>{f.fileName}</span>)}
               {f.isVue && (<>
                 <pre style={ f.localDependencies.length ? '' : 'opacity: .4' }>Local dependencies:     {f.localDependencies.join(', ') || '-'}</pre>
                 <pre style={ f.otherDependencies.length ? '' : 'opacity: .4' }>Other dependencies:     {f.otherDependencies.join(', ') || '-'}</pre>
