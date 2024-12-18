@@ -9,7 +9,10 @@ const app = new Hono();
 const List: FC<{ path: string; files: FolderScanItem[] }> = (props: { path: string; files: FolderScanItem[] }) => {
   return (
     <Layout>
-      <h2>{props.path}</h2>
+      <h2>
+        {props.path}
+        <a className="nav" href="/reports/components">Report for components &gt;</a>
+      </h2>
       <ul style='margin-top: 1rem;'>
         {props.files.map((f) =>
           f.isDirectory ? (

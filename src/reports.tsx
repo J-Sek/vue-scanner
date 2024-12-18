@@ -8,6 +8,10 @@ type ReportItem = { fileName: string, path: string, migrationComplexity: number,
 const Report: FC<{ title: string; items: ReportItem[] }> = (props: { title: string; items: ReportItem[] }) => {
   return (
     <Layout>
+      <h2>
+        All components by migration value
+        <a className="nav" href="/explore">Explore &gt;</a>
+      </h2>
       <ul style='margin-top: 1rem;'>
         <li style='background: transparent; opacity: .4'>
             <pre><code>{'Component'.padEnd(64,' ')}</code><code>{'Directory'.padEnd(20, ' ')}</code><code>{'Migration Value'.padStart(21, ' ')}</code><code>{'Complexity'.padStart(24, ' ')}</code></pre>
