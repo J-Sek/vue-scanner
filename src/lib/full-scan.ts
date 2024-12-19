@@ -19,67 +19,76 @@ const multipliers = {
 };
 
 function setupDatabase(db: Database) {
-  db.query(`DROP TABLE Components`).run();
+  // Helper function to check if a table exists
+  function tableExists(tableName: string): boolean {
+    const result = db
+      .query(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)
+      .get(tableName);
+    return !!result; // Returns true if the table exists, false otherwise
+  }
+
+  // Drop tables only if they exist
+  if (tableExists('Components')) {
+    db.query(`DROP TABLE Components`).run();
+  }
+  if (tableExists('Layouts')) {
+    db.query(`DROP TABLE Layouts`).run();
+  }
+  if (tableExists('Pages')) {
+    db.query(`DROP TABLE Pages`).run();
+  }
+
+  // Create tables
   db.query(`CREATE TABLE IF NOT EXISTS Components (
     path TEXT PRIMARY KEY,
     fileName TEXT NOT NULL UNIQUE,
     kebabName TEXT NOT NULL,
-
     localDependencies TEXT,
     otherDependencies TEXT,
     localImports TEXT,
     vuetifyComponents TEXT,
     vuetifyDirectives TEXT,
-
     allLocalDependencies TEXT,
     allOtherDependencies TEXT,
     allVuetifyComponents TEXT,
     allVuetifyDirectives TEXT,
-
     migrationComplexity INTEGER,
     migrationValue INTEGER
   )`).run();
 
-  db.query(`DROP TABLE Layouts`).run();
   db.query(`CREATE TABLE IF NOT EXISTS Layouts (
     path TEXT PRIMARY KEY,
     fileName TEXT NOT NULL,
     kebabName TEXT NOT NULL,
-
     localDependencies TEXT,
     otherDependencies TEXT,
     localImports TEXT,
     vuetifyComponents TEXT,
     vuetifyDirectives TEXT,
-
     allLocalDependencies TEXT,
     allOtherDependencies TEXT,
     allVuetifyComponents TEXT,
     allVuetifyDirectives TEXT,
-
     migrationComplexity INTEGER
   )`).run();
 
-  db.query(`DROP TABLE Pages`).run();
   db.query(`CREATE TABLE IF NOT EXISTS Pages (
     path TEXT PRIMARY KEY,
     fileName TEXT NOT NULL,
     kebabName TEXT NOT NULL,
-
     localDependencies TEXT,
     otherDependencies TEXT,
     localImports TEXT,
     vuetifyComponents TEXT,
     vuetifyDirectives TEXT,
-
     allLocalDependencies TEXT,
     allOtherDependencies TEXT,
     allVuetifyComponents TEXT,
     allVuetifyDirectives TEXT,
-
     migrationComplexity INTEGER
   )`).run();
 }
+
 
 // --------------------------------------------------------------
 
