@@ -3,6 +3,7 @@ import type { FC } from "hono/jsx";
 import type { FolderScanItem } from "./lib/types";
 import { readFolder } from "./lib/read-folder";
 import Layout from "./layouts/default";
+import { printCopyCommand } from "./lib/print-file-copy";
 
 const app = new Hono();
 
@@ -31,6 +32,10 @@ const List: FC<{ path: string; files: FolderScanItem[] }> = (props: { path: stri
                 <pre style={ f.vuetifyComponents.length ? '' : 'opacity: .4' }>Vuetify components:     {f.vuetifyComponents.join(', ') || '-'}</pre>
                 <pre style={ f.vuetifyDirectives.length ? '' : 'opacity: .4' }>Vuetify directives:     {f.vuetifyDirectives.join(', ') || '-'}</pre>
                 <pre>Migration complexity:   <code style='color: yellow; font-weight: bold'>{f.migrationComplexity}</code> <code style='opacity: .4'>&lt;---</code> ( {f.allLocalDependencies!.length} | {f.allOtherDependencies!.length} | {f.allVuetifyComponents!.length} | {f.allVuetifyDirectives!.length} )</pre>
+                <details style='margin-top: .5rem'>
+                  <summary style='color: #3dd7ea90'>Full copy command</summary>
+                  <pre style='padding: 1ch 1ch 1ch 4ch; background: #fff2'>{printCopyCommand(f.path)}</pre>
+                </details>
               </>)}
             </li>
           )

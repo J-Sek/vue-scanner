@@ -1,5 +1,7 @@
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
+import { parseArgs } from "util";
+import open from "open";
 import explore from "./explore";
 import reports from "./reports";
 import { fullScan } from "./lib/full-scan";
@@ -13,7 +15,28 @@ app.route("/reports", reports);
 
 app.get("/full-scan", async (c) => c.json(await fullScan()));
 
+const { values: options } = parseArgs({
+  args: Bun.argv,
+  options: {
+    open: {
+      type: 'boolean',
+    },
+    port: {
+      type: 'string',
+    },
+  },
+  strict: true,
+  allowPositionals: true,
+});
+
+const port = options.port ?? 8600
+
+if (options.open) {
+  new Promise(r => setTimeout(r, 1000))
+    .then(() => open(`http://localhost:${port}`))
+}
+
 export default {
-  port: 8600,
+  port,
   fetch: app.fetch,
 };

@@ -18,6 +18,7 @@ const Layout: FC = (props) => {
           a { color: #3dd7ea; text-decoration: none; border-radius: 4px; transition: all .3s ease-in-out }
           a:hover { background-color: #3dd7ea20 }
           .nav { position: absolute; top: 16px; right: 20px }
+          ::selection { background: #969600; color: black; text-shadow: none; }
         `}</style>
       </head>
       <body>{props.children}</body>
